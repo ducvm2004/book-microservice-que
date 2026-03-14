@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Home{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Customer Home</h1>
+    <p>Xin chao {{ request.user.username }}. Ban dang dang nhap voi vai tro customer.</p>
+</section>
+
+<section class="card">
+    <h2>Customer Actions</h2>
+    <ul>
+        <li><a href="/books/">Xem sach</a></li>
+        <li><a href="/carts/">Quan ly gio hang</a></li>
+        <li><a href="/orders/">Theo doi don hang</a></li>
+        <li><a href="/payments/">Xem thanh toan</a></li>
+        <li><a href="/recommendations/">Goi y sach</a></li>
+    </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Payments</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if not is_customer %}
+        <h2>Create Payment</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="number" name="order_id" placeholder="Order ID" required />
+            <input type="text" name="status" placeholder="Status" value="PAID" required />
+            <button type="submit">Create</button>
+        </form>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>{% if is_customer %}Payment History{% else %}Payment List{% endif %}</h2>
+    <ul>
+        {% for payment in payments %}
+            <li>ID {{ payment.id }} - order {{ payment.order_id }} - status {{ payment.status }}</li>
+        {% empty %}
+            <li>No payments</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

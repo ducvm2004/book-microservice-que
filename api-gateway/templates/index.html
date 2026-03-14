@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Bookstore Gateway{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Bookstore API Gateway</h1>
+    <p>Use the menu above to test all microservices from one interface.</p>
+</section>
+
+<section class="card">
+    <h2>Available Pages</h2>
+    <ul>
+        <li>Books: create and list books</li>
+        <li>Customers: create and list customers</li>
+        <li>Carts: create and list carts</li>
+        <li>Orders: create and list orders</li>
+        <li>Payments: create and list payments</li>
+        <li>Shipments: create and list shipments</li>
+        <li>Ratings: create and list ratings</li>
+        <li>Recommendations: view recommended book IDs</li>
+    </ul>
+</section>
+{% endblock %}

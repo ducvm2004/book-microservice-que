@@ -1,0 +1,52 @@
+﻿services:
+  customer-service:
+    build: ./customer-service
+    ports:
+      - "8001:8000"
+
+  book-service:
+    build: ./book-service
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
+    ports:
+      - "8002:8000"
+    volumes:
+      - book_service_db:/data
+
+  cart-service:
+    build: ./cart-service
+    ports:
+      - "8003:8000"
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "8004:8000"
+
+  pay-service:
+    build: ./pay-service
+    ports:
+      - "8005:8000"
+
+  ship-service:
+    build: ./ship-service
+    ports:
+      - "8006:8000"
+
+  comment-rate-service:
+    build: ./comment-rate-service
+    ports:
+      - "8007:8000"
+
+  recommender-ai-service:
+    build: ./recommender-ai-service
+    ports:
+      - "8008:8000"
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+
+volumes:
+  book_service_db:

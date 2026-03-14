@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Shipments{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Shipments</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    <h2>Create Shipment</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="number" name="order_id" placeholder="Order ID" required />
+        <input type="text" name="status" placeholder="Status" value="SHIPPED" required />
+        <button type="submit">Create</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Shipment List</h2>
+    <ul>
+        {% for shipment in shipments %}
+            <li>ID {{ shipment.id }} - order {{ shipment.order_id }} - status {{ shipment.status }}</li>
+        {% empty %}
+            <li>No shipments</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

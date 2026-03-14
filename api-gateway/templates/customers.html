@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Customers</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    <h2>Create Customer</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Name" required />
+        <input type="email" name="email" placeholder="Email" required />
+        <button type="submit">Create</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Customer List</h2>
+    <ul>
+        {% for customer in customers %}
+            <li>ID {{ customer.id }} - {{ customer.name }} - {{ customer.email }}</li>
+        {% empty %}
+            <li>No customers</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

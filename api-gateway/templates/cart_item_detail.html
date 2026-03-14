@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Cart Item Detail{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Cart Item Detail</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if item %}
+    <ul>
+        <li>Item ID: {{ item.id }}</li>
+        <li>Cart ID: {{ item.cart }}</li>
+        <li>Book: {% if book %}{{ book.title }}{% else %}Book #{{ item.book_id }}{% endif %}</li>
+        <li>Quantity: {{ item.quantity }}</li>
+        <li>Unit Price: ${{ unit_price }}</li>
+        <li>Item Total: ${{ item_total }}</li>
+    </ul>
+    {% endif %}
+</section>
+
+<section class="card">
+    <a href="{% url 'carts' %}">Back to Carts</a>
+</section>
+{% endblock %}

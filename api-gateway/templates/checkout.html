@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Checkout</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if current_items %}
+        <p>Customer ID {{ current_customer_id }}</p>
+        <p><strong>Total: ${{ cart_total }}</strong></p>
+
+        <h2>Items</h2>
+        <ul>
+            {% for item in current_items %}
+                <li>{{ item.book_title }} - qty {{ item.quantity }} - ${{ item.item_total }}</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Payment and Shipping</h2>
+        <form method="post">
+            {% csrf_token %}
+            <select name="payment_status" required>
+                <option value="PAID">Pay now (PAID)</option>
+                <option value="PENDING">Pay later (PENDING)</option>
+                <option value="FAILED">Payment failed (FAILED)</option>
+            </select>
+
+            <select name="shipment_status" required>
+                <option value="SHIPPED">Ship now (SHIPPED)</option>
+                <option value="PROCESSING">Ship processing (PROCESSING)</option>
+                <option value="PENDING">Ship pending (PENDING)</option>
+            </select>
+
+            <button type="submit">Xac nhan dat hang</button>
+        </form>
+    {% else %}
+        <p>Khong co san pham nao de checkout.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <a href="{% url 'carts' %}">Back to Carts</a>
+</section>
+{% endblock %}

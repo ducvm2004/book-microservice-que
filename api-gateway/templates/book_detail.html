@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Book Detail{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Book Detail</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if book %}
+        <ul>
+            <li>ID: {{ book.id }}</li>
+            <li>Title: {{ book.title }}</li>
+            <li>Author: {{ book.author }}</li>
+            <li>Price: ${{ book.price }}</li>
+            <li>Stock: {{ book.stock }}</li>
+        </ul>
+    {% else %}
+        <p>Cannot load this book (ID {{ book_id }}).</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Danh Gia Trung Binh</h2>
+    <p><strong>{{ average_stars }}</strong> ({{ average_rating }}/5 from {{ rating_count }} reviews)</p>
+</section>
+
+{% if is_customer and book %}
+<section class="card">
+    <h2>Viet Danh Gia</h2>
+    <form method="post">
+        {% csrf_token %}
+        <select name="rating" required>
+            <option value="5">5 sao</option>
+            <option value="4">4 sao</option>
+            <option value="3">3 sao</option>
+            <option value="2">2 sao</option>
+            <option value="1">1 sao</option>
+        </select>
+        <textarea name="comment" placeholder="Chia se cam nhan cua ban..." rows="4" required></textarea>
+        <button type="submit">Dang danh gia</button>
+    </form>
+</section>
+{% endif %}
+
+<section class="card">
+    <h2>Danh Gia Tu Khach Hang</h2>
+    <ul>
+        {% for review in reviews %}
+            <li>
+                <div><strong>{{ review.customer_name }}</strong> - {{ review.stars }} ({{ review.rating }}/5)</div>
+                <div style="margin-top: 6px;">{{ review.comment }}</div>
+            </li>
+        {% empty %}
+            <li>Chua co danh gia nao cho sach nay.</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section class="card">
+    <a href="{% url 'books' %}">Back to Books</a>
+</section>
+{% endblock %}

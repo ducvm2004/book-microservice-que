@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendations{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Recommendations</h1>
+
+    <h2>Search by Customer</h2>
+    <form method="get">
+        <input type="number" name="customer_id" value="{{ customer_id }}" placeholder="Customer ID" required />
+        <button type="submit">Get</button>
+    </form>
+
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+</section>
+
+<section class="card">
+    <h2>Recommended Book IDs</h2>
+    <ul>
+        {% for book_id in recommendations %}
+            <li>{{ book_id }}</li>
+        {% empty %}
+            <li>No recommendation</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

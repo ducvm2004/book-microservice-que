@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Orders</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if not is_customer %}
+        <h2>Create Order</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="number" name="customer_id" placeholder="Customer ID" required />
+
+            <select name="payment_status" required>
+                <option value="PAID">Pay now (PAID)</option>
+                <option value="PENDING">Pay later (PENDING)</option>
+                <option value="FAILED">Payment failed (FAILED)</option>
+            </select>
+
+            <select name="shipment_status" required>
+                <option value="SHIPPED">Ship now (SHIPPED)</option>
+                <option value="PROCESSING">Ship processing (PROCESSING)</option>
+                <option value="PENDING">Ship pending (PENDING)</option>
+            </select>
+
+            <button type="submit">Create</button>
+        </form>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>{% if is_customer %}Order History{% else %}Order List{% endif %}</h2>
+    <ul>
+        {% for order in orders %}
+            <li>
+                ID {{ order.id }} - customer {{ order.customer_id }} - order {{ order.status }} - payment {{ order.payment_status }} - shipment {{ order.shipment_status }}
+            </li>
+        {% empty %}
+            <li>No orders</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

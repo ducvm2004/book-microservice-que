@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Carts{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Carts</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if is_customer %}
+        <h2>Your Cart</h2>
+        {% if current_cart %}
+            <p>Cart ID {{ current_cart.id }} - customer {{ current_cart.customer_id }}</p>
+            <p><strong>Total: ${{ cart_total }}</strong></p>
+            {% if current_items %}
+                <form method="get" action="{% url 'checkout' %}" style="grid-template-columns: 1fr;">
+                    <button type="submit">Thanh toan</button>
+                </form>
+            {% endif %}
+        {% else %}
+            <p>Cart is not available yet.</p>
+        {% endif %}
+    {% else %}
+        <h2>Create Cart</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="number" name="customer_id" placeholder="Customer ID" required />
+            <button type="submit">Create</button>
+        </form>
+    {% endif %}
+</section>
+
+{% if is_customer %}
+<section class="card">
+    <h2>Your Cart Items</h2>
+    <ul>
+        {% for item in current_items %}
+            <li>
+                <div>
+                    <a href="{% url 'cart_item_detail' item.id %}">Item {{ item.id }}</a> - {{ item.book_title }} - quantity {{ item.quantity }} - price ${{ item.item_total }}
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <form method="post" style="display: flex; gap: 8px; align-items: center; grid-template-columns: none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_item" />
+                        <input type="hidden" name="item_id" value="{{ item.id }}" />
+                        <input type="number" name="quantity" min="1" value="{{ item.quantity }}" required style="width: 120px;" />
+                        <button type="submit">Cap nhat</button>
+                    </form>
+
+                    <form method="post" style="display: flex; align-items: center; grid-template-columns: none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_item" />
+                        <input type="hidden" name="item_id" value="{{ item.id }}" />
+                        <button type="submit">Xoa</button>
+                    </form>
+                </div>
+            </li>
+        {% empty %}
+            <li>No items in cart</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+{% endblock %}

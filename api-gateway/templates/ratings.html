@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Ratings{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Ratings</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    <h2>Create Rating</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="number" name="customer_id" placeholder="Customer ID" required />
+        <input type="number" name="book_id" placeholder="Book ID" required />
+        <input type="number" name="rating" placeholder="Rating 1-5" min="1" max="5" value="5" required />
+        <input type="text" name="comment" placeholder="Comment" required />
+        <button type="submit">Create</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Rating List</h2>
+    <ul>
+        {% for rating in ratings %}
+            <li>ID {{ rating.id }} - customer {{ rating.customer_id }} - book {{ rating.book_id }} - rating {{ rating.rating }} - {{ rating.comment }}</li>
+        {% empty %}
+            <li>No ratings</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}
