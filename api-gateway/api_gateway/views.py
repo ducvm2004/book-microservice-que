@@ -41,6 +41,55 @@ def _post_json_with_error(url, payload, error_prefix):
         return str(exc)
 
 
+def _set_book_stock(book_id, stock_value):
+    try:
+        response = requests.put(
+            f"{BOOK_SERVICE_URL}/books/{book_id}/",
+            json={"stock": stock_value},
+            timeout=5,
+        )
+        if response.status_code not in [200, 201]:
+            return f"Update stock failed for book #{book_id}: {response.text}"
+        return None
+    except requests.RequestException as exc:
+        return str(exc)
+
+
+def _reserve_stock_for_items(items, book_map):
+    original_stocks = {}
+
+    for item in items:
+        book_id = item.get("book_id")
+        book = book_map.get(book_id)
+        quantity = int(item.get("quantity", 0) or 0)
+
+        if not book:
+            return None, f"Book #{book_id} no longer exists."
+
+        current_stock = int(book.get("stock", 0) or 0)
+        if quantity <= 0:
+            return None, f"Invalid quantity for {book.get('title', f'Book #{book_id}')}."
+        if current_stock < quantity:
+            return None, f"Not enough stock for {book.get('title', f'Book #{book_id}')}. Remaining: {current_stock}."
+
+        original_stocks[book_id] = current_stock
+
+    for item in items:
+        book_id = item.get("book_id")
+        quantity = int(item.get("quantity", 0) or 0)
+        update_error = _set_book_stock(book_id, original_stocks[book_id] - quantity)
+        if update_error:
+            _restore_stock(original_stocks)
+            return None, update_error
+
+    return original_stocks, None
+
+
+def _restore_stock(original_stocks):
+    for book_id, stock_value in original_stocks.items():
+        _set_book_stock(book_id, stock_value)
+
+
 def _get_user_role(user):
     if user.groups.filter(name="staff").exists() or user.is_staff:
         return "staff"
@@ -72,6 +121,46 @@ def _ensure_customer_for_user(user):
         return create_resp.json().get("id"), None
     except requests.RequestException as exc:
         return None, str(exc)
+
+
+def _get_customer_for_user(user):
+    lookup_emails = []
+    if user.email:
+        lookup_emails.append(user.email)
+    legacy_email = f"{user.username}@customer.local"
+    if legacy_email not in lookup_emails:
+        lookup_emails.append(legacy_email)
+
+    try:
+        list_resp = requests.get(f"{CUSTOMER_SERVICE_URL}/customers/", timeout=5)
+        if list_resp.status_code != 200:
+            return None, "Cannot fetch customer list"
+
+        customers = list_resp.json()
+        existing = next((c for c in customers if c.get("email") in lookup_emails), None)
+        return existing, None
+    except requests.RequestException as exc:
+        return None, str(exc)
+
+
+def _refresh_session_jwt(request, username, role):
+    try:
+        auth_resp = requests.post(
+            f"{AUTH_SERVICE_URL}/auth/login/",
+            json={"username": username, "role": role},
+            timeout=5,
+        )
+        if auth_resp.status_code != 200:
+            return f"Auth service login failed: {auth_resp.text}"
+
+        token = auth_resp.json().get("access_token")
+        if not token:
+            return "Auth service did not return token."
+
+        request.session["jwt_token"] = token
+        return None
+    except requests.RequestException as exc:
+        return str(exc)
 
 
 def _ensure_cart_for_customer(customer_id):
@@ -174,6 +263,96 @@ def logout_view(request):
 def health(request):
     # ADDED-ASSIGNMENT06: basic observability endpoint for gateway.
     return JsonResponse({"status": "ok", "service": "api-gateway"})
+
+
+@login_required
+def account_detail(request):
+    role = _get_user_role(request.user) or "customer"
+    group_names = list(request.user.groups.values_list("name", flat=True))
+    jwt_payload = getattr(request, "jwt_payload", {}) or {}
+    customer = None
+    cart = None
+    error = None
+    success = None
+
+    if request.method == "POST":
+        new_username = request.POST.get("username", "").strip()
+        new_name = request.POST.get("name", "").strip()
+        new_email = request.POST.get("email", "").strip()
+
+        if not new_username:
+            error = "Username is required."
+        elif role == "customer" and (not new_name or not new_email):
+            error = "Name and email are required for customer accounts."
+        elif new_username != request.user.username and User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
+            error = f"Username '{new_username}' is already in use."
+        else:
+            existing_customer = None
+            if role == "customer":
+                existing_customer, customer_error = _get_customer_for_user(request.user)
+                if customer_error:
+                    error = customer_error
+                elif not existing_customer:
+                    error = "Customer profile not found."
+
+            if not error:
+                old_username = request.user.username
+                old_first_name = request.user.first_name
+                old_email = request.user.email
+                request.user.username = new_username
+                request.user.first_name = new_name
+                request.user.email = new_email
+                try:
+                    request.user.save(update_fields=["username", "first_name", "email"])
+                except Exception as exc:
+                    error = str(exc)
+
+                if not error and role == "customer":
+                    customer_resp = requests.put(
+                        f"{CUSTOMER_SERVICE_URL}/customers/{existing_customer.get('id')}/",
+                        json={"name": new_name, "email": new_email},
+                        timeout=5,
+                    )
+                    if customer_resp.status_code not in [200, 201]:
+                        request.user.username = old_username
+                        request.user.first_name = old_first_name
+                        request.user.email = old_email
+                        request.user.save(update_fields=["username", "first_name", "email"])
+                        error = f"Update customer profile failed: {customer_resp.text}"
+
+                if not error:
+                    jwt_error = _refresh_session_jwt(request, request.user.username, role)
+                    if jwt_error:
+                        error = f"Account updated, but session refresh failed: {jwt_error}"
+                    else:
+                        success = "Account updated successfully."
+
+    if role == "customer":
+        customer, error = _get_customer_for_user(request.user)
+        if customer and not error:
+            cart, cart_error = _ensure_cart_for_customer(customer.get("id"))
+            if cart_error:
+                error = cart_error
+
+    form_name = customer.get("name") if customer else request.user.first_name
+    form_email = customer.get("email") if customer else request.user.email
+
+    return render(
+        request,
+        "account_detail.html",
+        {
+            "role": role,
+            "group_names": group_names,
+            "jwt_payload": jwt_payload,
+            "customer": customer,
+            "cart": cart,
+            "error": error,
+            "success": success,
+            "form_username": request.user.username,
+            "form_name": form_name,
+            "form_email": form_email,
+        },
+    )
 
 
 @login_required
@@ -584,13 +763,22 @@ def checkout(request):
     cart_total = round(sum(float(item.get("item_total", 0) or 0) for item in current_items), 2)
 
     if request.method == "POST" and not error:
+        original_stocks, stock_error = _reserve_stock_for_items(current_items, book_map)
+        if stock_error:
+            error = stock_error
+
         payload = {
             "customer_id": current_customer_id,
             # ADDED-ASSIGNMENT06: force normal saga path from gateway UI (fault simulation disabled).
             "simulate_payment_fail": False,
             "simulate_shipping_fail": False,
         }
-        error = _post_json_with_error(f"{ORDER_SERVICE_URL}/orders/", payload, "Checkout failed")
+        if not error:
+            error = _post_json_with_error(f"{ORDER_SERVICE_URL}/orders/", payload, "Checkout failed")
+
+        if error and original_stocks:
+            _restore_stock(original_stocks)
+
         if not error:
             for item in current_items:
                 item_id = item.get("id")
@@ -875,11 +1063,21 @@ def rating_list(request):
 def recommendation_page(request):
     customer_id = request.GET.get("customer_id", "1")
     recommendations = []
+    recommended_books = []
+    strategy = ""
     error = None
     try:
         response = requests.get(f"{RECOMMENDER_AI_SERVICE_URL}/recommendations/{customer_id}/", timeout=5)
         if response.status_code == 200:
-            recommendations = response.json().get("recommended_books", [])
+            payload = response.json()
+            recommendations = payload.get("recommended_books", [])
+            strategy = payload.get("strategy", "")
+
+            books_resp = requests.get(f"{BOOK_SERVICE_URL}/books/", timeout=5)
+            if books_resp.status_code == 200:
+                all_books = books_resp.json()
+                book_map = {book.get("id"): book for book in all_books}
+                recommended_books = [book_map[book_id] for book_id in recommendations if book_id in book_map]
         else:
             error = f"Recommendation failed with status {response.status_code}"
     except requests.RequestException as exc:
@@ -890,7 +1088,9 @@ def recommendation_page(request):
         "recommendations.html",
         {
             "recommendations": recommendations,
+            "recommended_books": recommended_books,
             "customer_id": customer_id,
+            "strategy": strategy,
             "error": error,
         },
     )

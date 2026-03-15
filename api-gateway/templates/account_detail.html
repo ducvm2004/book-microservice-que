@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}My Account{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>My Account</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    {% if success %}<div class="success">{{ success }}</div>{% endif %}
+
+    <ul>
+        <li>Username: {{ request.user.username }}</li>
+        <li>Role: {{ role }}</li>
+        <li>Staff access: {% if request.user.is_staff %}Yes{% else %}No{% endif %}</li>
+        <li>Groups: {% if group_names %}{{ group_names|join:", " }}{% else %}No groups{% endif %}</li>
+        <li>JWT session: {% if jwt_payload %}Active{% else %}Unavailable{% endif %}</li>
+    </ul>
+</section>
+
+<section class="card">
+    <h2>Update Account</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="username" value="{{ form_username }}" placeholder="Username" required />
+        <input type="text" name="name" value="{{ form_name }}" placeholder="Name" {% if role == "customer" %}required{% endif %} />
+        <input type="email" name="email" value="{{ form_email }}" placeholder="Email" {% if role == "customer" %}required{% endif %} />
+        <button type="submit">Update Account</button>
+    </form>
+</section>
+
+{% if role == "customer" %}
+<section class="card">
+    <h2>Customer Profile</h2>
+    <ul>
+        <li>Customer ID: {% if customer %}{{ customer.id }}{% else %}Not found{% endif %}</li>
+        <li>Name: {% if customer %}{{ customer.name }}{% else %}-{% endif %}</li>
+        <li>Email: {% if customer %}{{ customer.email }}{% else %}-{% endif %}</li>
+        <li>Cart ID: {% if cart %}{{ cart.id }}{% else %}Not found{% endif %}</li>
+    </ul>
+    <p>This information is resolved from customer-service and cart-service for the current logged-in user.</p>
+</section>
+{% else %}
+<section class="card">
+    <h2>Staff Profile</h2>
+    <p>This account can manage books and operational data exposed by the gateway.</p>
+    {% if jwt_payload %}
+    <ul>
+        <li>JWT subject: {{ jwt_payload.sub|default:"-" }}</li>
+        <li>JWT role: {{ jwt_payload.role|default:"-" }}</li>
+    </ul>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

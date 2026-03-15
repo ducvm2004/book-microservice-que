@@ -17,9 +17,13 @@
 
 <section class="card">
     <h2>Recommended Book IDs</h2>
+    {% if strategy %}<p>Strategy: {{ strategy }}</p>{% endif %}
     <ul>
-        {% for book_id in recommendations %}
-            <li>{{ book_id }}</li>
+        {% for book in recommended_books %}
+            <li>
+                #{{ book.id }} - {{ book.title }} by {{ book.author }}
+                ({{ book.price }})
+            </li>
         {% empty %}
             <li>No recommendation</li>
         {% endfor %}

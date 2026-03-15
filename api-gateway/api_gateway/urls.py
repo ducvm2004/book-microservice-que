@@ -1,6 +1,7 @@
 ﻿from django.contrib import admin
 from django.urls import path
 from .views import (
+    account_detail,
     book_detail,
     book_list,
     cart_item_detail,
@@ -23,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+    path('account/', account_detail, name='account_detail'),
     path('health/', health, name='health'),
     path('', home, name='home'),
     path('books/', book_list, name='books'),
