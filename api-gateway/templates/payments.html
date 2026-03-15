@@ -22,7 +22,15 @@
     <h2>{% if is_customer %}Payment History{% else %}Payment List{% endif %}</h2>
     <ul>
         {% for payment in payments %}
-            <li>ID {{ payment.id }} - order {{ payment.order_id }} - status {{ payment.status }}</li>
+            <li>
+                {% if not is_customer %}
+                    <a href="{% url 'payment_detail' payment.id %}">
+                        ID {{ payment.id }} - order {{ payment.order_id }} - status {{ payment.status }}
+                    </a>
+                {% else %}
+                    ID {{ payment.id }} - order {{ payment.order_id }} - status {{ payment.status }}
+                {% endif %}
+            </li>
         {% empty %}
             <li>No payments</li>
         {% endfor %}

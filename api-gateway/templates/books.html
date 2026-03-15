@@ -7,6 +7,13 @@
     <h1>Books</h1>
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
+    <h2>Search Book</h2>
+    <form method="get" style="grid-template-columns: minmax(240px, 1fr) 120px 120px;">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search by title or keyword" />
+        <button type="submit">Search</button>
+        {% if search_query %}<a href="/books/">Clear</a>{% endif %}
+    </form>
+
     {% if not is_customer %}
         <h2>Create Book</h2>
         <form method="post">

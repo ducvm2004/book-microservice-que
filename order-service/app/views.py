@@ -56,3 +56,13 @@ class OrderListCreate(APIView):
 
         order.save()
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+class OrderDetail(APIView):
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(OrderSerializer(order).data)

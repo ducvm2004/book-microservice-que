@@ -153,6 +153,7 @@ def book_list(request):
     error = None
     role = _get_user_role(request.user) or "customer"
     is_customer = role == "customer"
+    search_query = request.GET.get("q", "").strip()
 
     if request.method == "POST":
         action = request.POST.get("action", "")
@@ -215,10 +216,23 @@ def book_list(request):
             error = str(exc)
 
     books, fetch_error = _safe_get_json(f"{BOOK_SERVICE_URL}/books/")
+    if isinstance(books, list) and search_query:
+        needle = search_query.lower()
+        books = [
+            book
+            for book in books
+            if needle in str(book.get("title", "")).lower() or needle in str(book.get("author", "")).lower()
+        ]
+
     return render(
         request,
         "books.html",
-        {"books": books, "error": error or fetch_error, "is_customer": is_customer},
+        {
+            "books": books,
+            "error": error or fetch_error,
+            "is_customer": is_customer,
+            "search_query": search_query,
+        },
     )
 
 
@@ -627,6 +641,61 @@ def order_list(request):
 
 
 @login_required
+def order_detail(request, order_id):
+    role = _get_user_role(request.user) or "customer"
+    if role != "staff":
+        return redirect("orders")
+
+    error = None
+    order = None
+    payment = None
+    shipment = None
+    customer = None
+
+    try:
+        order_resp = requests.get(f"{ORDER_SERVICE_URL}/orders/{order_id}/", timeout=5)
+        if order_resp.status_code == 200:
+            order = order_resp.json()
+        else:
+            error = f"Order not found (status {order_resp.status_code})"
+    except requests.RequestException as exc:
+        error = str(exc)
+
+    if order and not error:
+        payments, payments_error = _safe_get_json(f"{PAY_SERVICE_URL}/payments/")
+        if payments_error:
+            error = payments_error
+        elif isinstance(payments, list):
+            payment = next((row for row in payments if row.get("order_id") == order_id), None)
+
+    if order and not error:
+        shipments, shipments_error = _safe_get_json(f"{SHIP_SERVICE_URL}/shipments/")
+        if shipments_error:
+            error = shipments_error
+        elif isinstance(shipments, list):
+            shipment = next((row for row in shipments if row.get("order_id") == order_id), None)
+
+    if order and not error:
+        customers, customers_error = _safe_get_json(f"{CUSTOMER_SERVICE_URL}/customers/")
+        if customers_error:
+            error = customers_error
+        elif isinstance(customers, list):
+            customer = next((row for row in customers if row.get("id") == order.get("customer_id")), None)
+
+    return render(
+        request,
+        "order_detail.html",
+        {
+            "error": error,
+            "order": order,
+            "payment": payment,
+            "shipment": shipment,
+            "customer": customer,
+        },
+    )
+
+
+@login_required
 def payment_list(request):
     error = None
     role = _get_user_role(request.user) or "customer"
@@ -675,6 +744,65 @@ def payment_list(request):
             "payments": payments,
             "error": error or fetch_error,
             "is_customer": is_customer,
+        },
+    )
+
+
+@login_required
+def payment_detail(request, payment_id):
+    role = _get_user_role(request.user) or "customer"
+    if role != "staff":
+        return redirect("payments")
+
+    error = None
+    payment = None
+    order = None
+    customer = None
+    shipment = None
+
+    try:
+        payment_resp = requests.get(f"{PAY_SERVICE_URL}/payments/{payment_id}/", timeout=5)
+        if payment_resp.status_code == 200:
+            payment = payment_resp.json()
+        else:
+            error = f"Payment not found (status {payment_resp.status_code})"
+    except requests.RequestException as exc:
+        error = str(exc)
+
+    if payment and not error:
+        order_id = payment.get("order_id")
+        try:
+            order_resp = requests.get(f"{ORDER_SERVICE_URL}/orders/{order_id}/", timeout=5)
+            if order_resp.status_code == 200:
+                order = order_resp.json()
+            else:
+                error = f"Order not found (status {order_resp.status_code})"
+        except requests.RequestException as exc:
+            error = str(exc)
+
+    if order and not error:
+        customers, customers_error = _safe_get_json(f"{CUSTOMER_SERVICE_URL}/customers/")
+        if customers_error:
+            error = customers_error
+        elif isinstance(customers, list):
+            customer = next((row for row in customers if row.get("id") == order.get("customer_id")), None)
+
+    if payment and not error:
+        shipments, shipments_error = _safe_get_json(f"{SHIP_SERVICE_URL}/shipments/")
+        if shipments_error:
+            error = shipments_error
+        elif isinstance(shipments, list):
+            shipment = next((row for row in shipments if row.get("order_id") == payment.get("order_id")), None)
+
+    return render(
+        request,
+        "payment_detail.html",
+        {
+            "error": error,
+            "payment": payment,
+            "order": order,
+            "customer": customer,
+            "shipment": shipment,
         },
     )
 

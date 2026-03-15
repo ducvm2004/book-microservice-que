@@ -35,7 +35,13 @@
     <ul>
         {% for order in orders %}
             <li>
-                ID {{ order.id }} - customer {{ order.customer_id }} - order {{ order.status }} - payment {{ order.payment_status }} - shipment {{ order.shipment_status }}
+                {% if not is_customer %}
+                    <a href="{% url 'order_detail' order.id %}">
+                        ID {{ order.id }} - customer {{ order.customer_id }} - order {{ order.status }} - payment {{ order.payment_status }} - shipment {{ order.shipment_status }}
+                    </a>
+                {% else %}
+                    ID {{ order.id }} - customer {{ order.customer_id }} - order {{ order.status }} - payment {{ order.payment_status }} - shipment {{ order.shipment_status }}
+                {% endif %}
             </li>
         {% empty %}
             <li>No orders</li>

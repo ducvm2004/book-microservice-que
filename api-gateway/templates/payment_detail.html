@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Detail{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1>Payment Detail</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    {% if payment %}
+        <ul>
+            <li>Payment ID: {{ payment.id }}</li>
+            <li>Order ID: {{ payment.order_id }}</li>
+            <li>Status: {{ payment.status|default:"N/A" }}</li>
+        </ul>
+    {% else %}
+        <p>Payment not found.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Order Info</h2>
+    {% if order %}
+        <ul>
+            <li>Order ID: {{ order.id }}</li>
+            <li>Customer ID: {{ order.customer_id }}</li>
+            <li>Order status: {{ order.status|default:"N/A" }}</li>
+        </ul>
+    {% else %}
+        <p>No order information.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Customer Info</h2>
+    {% if customer %}
+        <ul>
+            <li>ID: {{ customer.id }}</li>
+            <li>Name: {{ customer.name|default:"N/A" }}</li>
+            <li>Email: {{ customer.email|default:"N/A" }}</li>
+        </ul>
+    {% else %}
+        <p>No customer information.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Shipment Info</h2>
+    {% if shipment %}
+        <ul>
+            <li>Shipment ID: {{ shipment.id }}</li>
+            <li>Order ID: {{ shipment.order_id }}</li>
+            <li>Status: {{ shipment.status|default:"N/A" }}</li>
+        </ul>
+    {% else %}
+        <p>No shipment found for this payment's order.</p>
+    {% endif %}
+</section>
+{% endblock %}

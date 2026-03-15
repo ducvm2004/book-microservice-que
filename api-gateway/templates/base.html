@@ -1,181 +1,306 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Bookstore Gateway{% endblock %}</title>
-    <style>
-        :root {
-            --bg: #f4f7fb;
-            --card: #ffffff;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --border: #e5e7eb;
-            --error-bg: #fef2f2;
-            --error-text: #b91c1c;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
-        * {
-            box-sizing: border-box;
-        }
+<title>{% block title %}Bookstore Gateway{% endblock %}</title>
 
-        body {
-            margin: 0;
-            font-family: "Segoe UI", Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
+<style>
 
-        .container {
-            max-width: 1000px;
-            margin: 24px auto;
-            padding: 0 16px;
-        }
+:root {
+	--bg: #ecf2ff;
+	--bg-soft: #f7faff;
+	--card: #ffffff;
+	--text: #172033;
+	--muted: #5d6b82;
+	--primary: #0f5cff;
+	--primary-hover: #0a49cf;
+	--ring: rgba(15, 92, 255, 0.22);
+	--border: #d9e2f2;
+	--surface-border: rgba(255, 255, 255, 0.45);
+	--shadow: 0 24px 48px rgba(23, 32, 51, 0.11);
+}
 
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-        }
+* {
+	box-sizing: border-box;
+}
 
-        h1, h2 {
-            margin: 0 0 12px 0;
-        }
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+}
 
-        h1 {
-            font-size: 28px;
-        }
+body {
+	position: relative;
+	font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+	color: var(--text);
+	background:
+		radial-gradient(circle at 8% 12%, #dce8ff 0%, transparent 34%),
+		radial-gradient(circle at 88% 22%, #d6f1ff 0%, transparent 30%),
+		linear-gradient(160deg, #edf3ff 0%, #f6fbff 42%, #edf1fb 100%);
+}
 
-        h2 {
-            font-size: 20px;
-            color: var(--muted);
-        }
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0.3;
+	background-image: linear-gradient(rgba(15, 92, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 92, 255, 0.07) 1px, transparent 1px);
+	background-size: 26px 26px;
+	mask-image: radial-gradient(circle at center, #000 12%, transparent 78%);
+}
 
-        .topbar {
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 16px;
-        }
+.container {
+	max-width: 1160px;
+	margin: 34px auto 56px;
+	padding: 0 18px;
+}
 
-        .brand {
-            font-weight: 700;
-            color: var(--primary);
-            text-decoration: none;
-            font-size: 18px;
-        }
+.topbar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	backdrop-filter: blur(8px);
+	background: rgba(247, 250, 255, 0.82);
+	border-bottom: 1px solid #cfdaef;
+	padding: 14px 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}
 
-        .nav {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
+.brand {
+	font-family: "Sora", sans-serif;
+	font-size: 1.35rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	text-decoration: none;
+	color: #0842be;
+}
 
-        .nav a {
-            text-decoration: none;
-            color: var(--text);
-            background: #eef2ff;
-            border: 1px solid #dbeafe;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
+.nav {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
 
-        .nav a:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
+.nav a {
+	text-decoration: none;
+	font-size: 0.92rem;
+	font-weight: 500;
+	padding: 8px 14px;
+	border-radius: 10px;
+	color: #22304a;
+	border: 1px solid var(--border);
+	background: rgba(255, 255, 255, 0.7);
+	transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
 
-        form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 10px;
-            align-items: center;
-        }
+.nav a:hover {
+	transform: translateY(-1px);
+	border-color: #8db4ff;
+	background: #f2f7ff;
+	box-shadow: 0 10px 20px rgba(15, 92, 255, 0.14);
+}
 
-        input,
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            background: #fff;
-        }
+.card {
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
+	border: 1px solid var(--surface-border);
+	border-radius: 20px;
+	padding: 24px;
+	box-shadow: var(--shadow);
+	margin-bottom: 18px;
+	animation: fade-in-up 0.35s ease both;
+}
 
-        button {
-            padding: 10px 14px;
-            border: none;
-            border-radius: 8px;
-            background: var(--primary);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-        }
+h1,
+h2,
+h3 {
+	font-family: "Sora", sans-serif;
+	letter-spacing: -0.02em;
+	margin: 0 0 12px;
+}
 
-        button:hover {
-            background: var(--primary-hover);
-        }
+h1 {
+	font-size: clamp(1.7rem, 2.4vw, 2.1rem);
+}
 
-        ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+h2 {
+	font-size: clamp(1.2rem, 1.6vw, 1.4rem);
+	color: #4b5970;
+}
 
-        li {
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background: #fff;
-            font-size: 14px;
-        }
+p {
+	color: var(--muted);
+	margin: 0 0 16px;
+	line-height: 1.6;
+}
 
-        .error {
-            border: 1px solid #fecaca;
-            background: var(--error-bg);
-            color: var(--error-text);
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-    </style>
+form {
+	display: grid;
+	gap: 10px;
+	width: 100%;
+}
+
+input,
+select,
+textarea {
+	width: 100%;
+	padding: 11px 13px;
+	border-radius: 11px;
+	border: 1px solid var(--border);
+	font-family: inherit;
+	font-size: 0.95rem;
+	color: var(--text);
+	background: #ffffff;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+	outline: none;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 4px var(--ring);
+}
+
+button {
+	padding: 11px 16px;
+	border-radius: 11px;
+	border: none;
+	font-family: "Sora", sans-serif;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	cursor: pointer;
+	background: linear-gradient(145deg, var(--primary), #2c7dff);
+	color: #ffffff;
+	transition: transform 0.16s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+
+button:hover {
+	transform: translateY(-1px);
+	background: linear-gradient(145deg, var(--primary-hover), #1f67dd);
+	box-shadow: 0 10px 22px rgba(15, 92, 255, 0.24);
+}
+
+a {
+	color: var(--primary);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+li {
+	padding: 12px 14px;
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	margin-bottom: 9px;
+	background: #ffffff;
+}
+
+.error {
+	padding: 11px 13px;
+	border-radius: 11px;
+	background: #fff1f1;
+	border: 1px solid #f5b8b8;
+	color: #a61414;
+	margin-bottom: 15px;
+}
+
+.center-shell {
+	display: flex;
+	justify-content: center;
+}
+
+@keyframes fade-in-up {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (max-width: 840px) {
+	.topbar {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.nav {
+		width: 100%;
+		justify-content: flex-start;
+	}
+
+	.container {
+		margin-top: 22px;
+	}
+
+	.card {
+		padding: 18px;
+	}
+}
+
+</style>
 </head>
-<body>
-    <header class="topbar">
-        <a class="brand" href="/">Bookstore API Gateway</a>
-        <nav class="nav">
-            {% if request.user.is_authenticated %}
-                <a href="/">Home</a>
-                <a href="/books/">Books</a>
-                {% if request.user.is_staff %}
-                    <a href="/customers/">Customers</a>
-                    <a href="/carts/">Carts</a>
-                    <a href="/orders/">Orders</a>
-                    <a href="/payments/">Payments</a>
-                    <a href="/shipments/">Shipments</a>
-                    <a href="/recommendations/">Recommendations</a>
-                {% else %}
-                    <a href="/carts/">Carts</a>
-                    <a href="/orders/">Orders</a>
-                    <a href="/payments/">Payments</a>
-                    <a href="/recommendations/">Recommendations</a>
-                {% endif %}
-                <a href="/logout/">Logout ({{ request.user.username }})</a>
-            {% else %}
-                <a href="/login/">Login</a>
-            {% endif %}
-        </nav>
-    </header>
 
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
+<body>
+
+<header class="topbar">
+
+<a class="brand" href="/">Bookstore Gateway</a>
+
+<nav class="nav">
+{% if request.user.is_authenticated %}
+
+<a href="/">Home</a>
+<a href="/books/">Books</a>
+
+{% if request.user.is_staff %}
+<a href="/customers/">Customers</a>
+<a href="/orders/">Orders</a>
+<a href="/payments/">Payments</a>
+<a href="/shipments/">Shipments</a>
+{% else %}
+<a href="/carts/">Carts</a>
+<a href="/orders/">Orders</a>
+<a href="/payments/">Payments</a>
+<a href="/recommendations/">Recommendations</a>
+{% endif %}
+
+<a href="/logout/">Logout ({{ request.user.username }})</a>
+
+{% else %}
+
+<a href="/login/">Login</a>
+
+{% endif %}
+</nav>
+
+</header>
+
+<main class="container">
+{% block content %}{% endblock %}
+</main>
+
 </body>
 </html>

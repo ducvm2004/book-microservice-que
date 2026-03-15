@@ -3,20 +3,41 @@
 {% block title %}Login - Bookstore Gateway{% endblock %}
 
 {% block content %}
-<section class="card">
-    <h1>Login</h1>
-    <p>Nhap username va chon role. Neu user chua ton tai, he thong se tu dong tao.</p>
 
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+<div class="center-shell">
 
-    <form method="post">
-        {% csrf_token %}
-        <input type="text" name="username" placeholder="Username" required />
-        <select name="role" required>
-            <option value="customer">Customer</option>
-            <option value="staff">Staff</option>
-        </select>
-        <button type="submit">Login</button>
-    </form>
+<section class="card" style="width: 440px;">
+
+<h1>Login</h1>
+
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+<form method="post">
+{% csrf_token %}
+
+<input
+type="text"
+name="username"
+placeholder="Username"
+required
+/>
+
+<select name="role" required>
+<option value="customer">Customer</option>
+<option value="staff">Staff</option>
+</select>
+
+<button type="submit">
+Login
+</button>
+
+</form>
+
 </section>
+
+</div>
+
 {% endblock %}
