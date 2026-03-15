@@ -1,4 +1,5 @@
 ﻿from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,7 +50,8 @@ WSGI_APPLICATION = 'pay_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # ADDED-ASSIGNMENT06: allow API and worker to share the same SQLite file.
+        'NAME': os.getenv('SQLITE_DB_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 

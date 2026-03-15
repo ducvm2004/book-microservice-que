@@ -2,6 +2,7 @@ import requests
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group, User
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 
@@ -13,6 +14,7 @@ PAY_SERVICE_URL = "http://pay-service:8000"
 SHIP_SERVICE_URL = "http://ship-service:8000"
 COMMENT_RATE_SERVICE_URL = "http://comment-rate-service:8000"
 RECOMMENDER_AI_SERVICE_URL = "http://recommender-ai-service:8000"
+AUTH_SERVICE_URL = "http://auth-service:8000"
 
 
 def _safe_get_json(url):
@@ -32,7 +34,7 @@ def _to_int(value, default=0):
 def _post_json_with_error(url, payload, error_prefix):
     try:
         response = requests.post(url, json=payload, timeout=5)
-        if response.status_code in [200, 201]:
+        if response.status_code in [200, 201, 202]:
             return None
         return f"{error_prefix}: {response.text}"
     except requests.RequestException as exc:
@@ -137,6 +139,25 @@ def login_view(request):
                             error = cart_err
 
                 if not error:
+                    # ADDED-ASSIGNMENT06: request JWT from auth-service then store in session.
+                    try:
+                        auth_resp = requests.post(
+                            f"{AUTH_SERVICE_URL}/auth/login/",
+                            json={"username": username, "role": role},
+                            timeout=5,
+                        )
+                        if auth_resp.status_code != 200:
+                            error = f"Auth service login failed: {auth_resp.text}"
+                        else:
+                            token = auth_resp.json().get("access_token")
+                            if not token:
+                                error = "Auth service did not return token."
+                            else:
+                                request.session["jwt_token"] = token
+                    except requests.RequestException as exc:
+                        error = str(exc)
+
+                if not error:
                     login(request, user)
                     return redirect("home")
 
@@ -144,8 +165,15 @@ def login_view(request):
 
 
 def logout_view(request):
+    # ADDED-ASSIGNMENT06: remove JWT on logout.
+    request.session.pop("jwt_token", None)
     logout(request)
     return redirect("login")
+
+
+def health(request):
+    # ADDED-ASSIGNMENT06: basic observability endpoint for gateway.
+    return JsonResponse({"status": "ok", "service": "api-gateway"})
 
 
 @login_required
@@ -558,8 +586,9 @@ def checkout(request):
     if request.method == "POST" and not error:
         payload = {
             "customer_id": current_customer_id,
-            "payment_status": request.POST.get("payment_status", "PAID"),
-            "shipment_status": request.POST.get("shipment_status", "SHIPPED"),
+            # ADDED-ASSIGNMENT06: force normal saga path from gateway UI (fault simulation disabled).
+            "simulate_payment_fail": False,
+            "simulate_shipping_fail": False,
         }
         error = _post_json_with_error(f"{ORDER_SERVICE_URL}/orders/", payload, "Checkout failed")
         if not error:
@@ -601,8 +630,9 @@ def order_list(request):
             customer_id_value = current_customer_id if is_customer else _to_int(request.POST.get("customer_id", "0"), 0)
             payload = {
                 "customer_id": customer_id_value,
-                "payment_status": request.POST.get("payment_status", "PAID"),
-                "shipment_status": request.POST.get("shipment_status", "SHIPPED"),
+                # ADDED-ASSIGNMENT06: force normal saga path from gateway UI (fault simulation disabled).
+                "simulate_payment_fail": False,
+                "simulate_shipping_fail": False,
             }
             error = _post_json_with_error(f"{ORDER_SERVICE_URL}/orders/", payload, "Create order failed")
             if not error:

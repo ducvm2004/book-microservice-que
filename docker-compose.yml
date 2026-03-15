@@ -1,4 +1,17 @@
 ﻿services:
+  # ADDED-ASSIGNMENT06: Message broker for asynchronous event bus.
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  # ADDED-ASSIGNMENT06: Dedicated JWT authentication service.
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8010:8000"
+
   customer-service:
     build: ./customer-service
     ports:
@@ -20,18 +33,69 @@
 
   order-service:
     build: ./order-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
     ports:
       - "8004:8000"
+    volumes:
+      - order_service_db:/data
+
+  # ADDED-ASSIGNMENT06: Order saga orchestrator worker.
+  order-saga-worker:
+    build: ./order-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
+    volumes:
+      - order_service_db:/data
+    command: ["python", "manage.py", "saga_worker"]
 
   pay-service:
     build: ./pay-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
     ports:
       - "8005:8000"
+    volumes:
+      - pay_service_db:/data
+
+  # ADDED-ASSIGNMENT06: Payment reservation consumer worker.
+  pay-event-worker:
+    build: ./pay-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
+    volumes:
+      - pay_service_db:/data
+    command: ["python", "manage.py", "payment_worker"]
 
   ship-service:
     build: ./ship-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
     ports:
       - "8006:8000"
+    volumes:
+      - ship_service_db:/data
+
+  # ADDED-ASSIGNMENT06: Shipping reservation consumer worker.
+  ship-event-worker:
+    build: ./ship-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SQLITE_DB_PATH=/data/db.sqlite3
+    volumes:
+      - ship_service_db:/data
+    command: ["python", "manage.py", "shipping_worker"]
 
   comment-rate-service:
     build: ./comment-rate-service
@@ -45,8 +109,13 @@
 
   api-gateway:
     build: ./api-gateway
+    depends_on:
+      - auth-service
     ports:
       - "8000:8000"
 
 volumes:
   book_service_db:
+  order_service_db:
+  pay_service_db:
+  ship_service_db:

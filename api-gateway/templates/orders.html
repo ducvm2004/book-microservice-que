@@ -13,17 +13,8 @@
             {% csrf_token %}
             <input type="number" name="customer_id" placeholder="Customer ID" required />
 
-            <select name="payment_status" required>
-                <option value="PAID">Pay now (PAID)</option>
-                <option value="PENDING">Pay later (PENDING)</option>
-                <option value="FAILED">Payment failed (FAILED)</option>
-            </select>
-
-            <select name="shipment_status" required>
-                <option value="SHIPPED">Ship now (SHIPPED)</option>
-                <option value="PROCESSING">Ship processing (PROCESSING)</option>
-                <option value="PENDING">Ship pending (PENDING)</option>
-            </select>
+            <!-- ADDED-ASSIGNMENT06: fault simulation controls are hidden to avoid accidental failures. -->
+            <p>Saga fault simulation is disabled in UI. This action creates a normal order flow.</p>
 
             <button type="submit">Create</button>
         </form>

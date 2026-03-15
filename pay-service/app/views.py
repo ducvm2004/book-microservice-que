@@ -26,3 +26,12 @@ class PaymentDetail(APIView):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(PaymentSerializer(payment).data)
+
+
+# ADDED-ASSIGNMENT06: basic observability health endpoint.
+class HealthView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok", "service": "pay-service"})

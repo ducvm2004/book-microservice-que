@@ -3,11 +3,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Order
 from .serializers import OrderSerializer
-import requests
+from .event_bus import publish_event
 
 
-PAY_SERVICE_URL = "http://pay-service:8000"
-SHIP_SERVICE_URL = "http://ship-service:8000"
+def _as_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
 
 
 class OrderListCreate(APIView):
@@ -20,42 +24,24 @@ class OrderListCreate(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        order = serializer.save(status='PENDING')
-
-        payment_status = request.data.get("payment_status", "PAID")
-        shipment_status = request.data.get("shipment_status", "SHIPPED")
-
-        allowed_payment_status = {"PAID", "PENDING", "FAILED"}
-        allowed_shipment_status = {"SHIPPED", "PROCESSING", "PENDING"}
-        if payment_status not in allowed_payment_status:
-            order.delete()
-            return Response({"payment_status": "Invalid payment status"}, status=status.HTTP_400_BAD_REQUEST)
-        if shipment_status not in allowed_shipment_status:
-            order.delete()
-            return Response({"shipment_status": "Invalid shipment status"}, status=status.HTTP_400_BAD_REQUEST)
-
-        pay_resp = requests.post(
-            f"{PAY_SERVICE_URL}/payments/",
-            json={"order_id": order.id, "status": payment_status},
-            timeout=5,
-        )
-        ship_resp = requests.post(
-            f"{SHIP_SERVICE_URL}/shipments/",
-            json={"order_id": order.id, "status": shipment_status},
-            timeout=5,
+        # ADDED-ASSIGNMENT06: initialize distributed transaction in PENDING state.
+        order = serializer.save(
+            status="PENDING",
+            payment_reserved=False,
+            shipping_reserved=False,
+            compensation_reason="",
         )
 
-        if pay_resp.status_code not in [200, 201] or ship_resp.status_code not in [200, 201]:
-            order.status = 'FAILED'
-        elif payment_status == 'PAID' and shipment_status == 'SHIPPED':
-            order.status = 'COMPLETED'
-        elif payment_status == 'FAILED':
-            order.status = 'FAILED'
-        else:
-            order.status = 'PROCESSING'
+        saga_payload = {
+            "order_id": order.id,
+            "customer_id": order.customer_id,
+            # ADDED-ASSIGNMENT06: fault simulation controls for grading requirements.
+            "simulate_payment_fail": _as_bool(request.data.get("simulate_payment_fail", False)),
+            "simulate_shipping_fail": _as_bool(request.data.get("simulate_shipping_fail", False)),
+        }
+        publish_event("order.created", saga_payload)
 
-        order.save()
-        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        return Response(OrderSerializer(order).data, status=status.HTTP_202_ACCEPTED)
 
 
 class OrderDetail(APIView):
@@ -66,3 +52,12 @@ class OrderDetail(APIView):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(OrderSerializer(order).data)
+
+
+# ADDED-ASSIGNMENT06: basic observability health endpoint.
+class HealthView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok", "service": "order-service"})
